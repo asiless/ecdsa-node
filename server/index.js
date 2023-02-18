@@ -1,3 +1,7 @@
+const secp = require("ethereum-cryptography/secp256k1")
+const {toHex, utf8ToBytes} = require("ethereum-cryptography/utils")
+const {keccak256} = require("ethereum-cryptography/keccak")
+
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -7,9 +11,9 @@ app.use(cors());
 app.use(express.json());
 
 const balances = {
-  "0x1": 100,
-  "0x2": 50,
-  "0x3": 75,
+  "0ff1e24d2fd6951bbfab201e51f7f7922c87aac3": 100,
+  "1fcebb21995ce0f98a4c61799bc67e856b18d3ee": 50,
+  "6ce3ef05559cb3518beb5dc8ed820825e6cc7cdf": 75,
 };
 
 app.get("/balance/:address", (req, res) => {
@@ -19,7 +23,16 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
+  //TODO: GET THE SIGNATURE and recover the sender!!
+  console.log(req.body)
+  const { signature, recoveryBit, recipient, amount } = req.body;
+
+  const bytes = utf8ToBytes('transfer');
+  const hash = keccak256(bytes); 
+  const publicKey = secp.recoverPublicKey(hash, signature, recoveryBit);
+  const sender =  toHex(keccak256(publicKey.slice(1)).slice(12));
+
+  console.log(`<new transaction>\nfrom:\t${sender}\nto:\t${recipient}\namount:\t${amount}`);
 
   setInitialBalance(sender);
   setInitialBalance(recipient);
